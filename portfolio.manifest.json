@@ -1,0 +1,6 @@
+{
+  "username": "your-username",
+  "deployPath": "/your-username/",
+  "siteTitle": "Your Portfolio",
+  "outputDir": "dist"
+}

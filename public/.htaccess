@@ -1,0 +1,17 @@
+# The starter itself uses section anchors, so this file is mainly here to keep
+# future client-side routes working when the app is deployed in a subdirectory
+# such as /niko/.
+
+<IfModule mod_negotiation.c>
+  Options -MultiViews
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ index.html [L]
+</IfModule>

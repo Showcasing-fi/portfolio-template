@@ -1,0 +1,13 @@
+:root {
+  --layout-width: 72rem;
+  --color-text: #18302b;
+  --color-muted: #50635d;
+  --color-accent: #0f766e;
+  --color-border: rgba(24, 48, 43, 0.12);
+  --color-border-strong: rgba(24, 48, 43, 0.2);
+  --color-surface: rgba(255, 252, 248, 0.82);
+  --color-surface-strong: rgba(255, 255, 255, 0.92);
+  --shadow-soft: 0 20px 60px rgba(24, 48, 43, 0.08);
+  --font-body: "Aptos", "Trebuchet MS", sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", serif;
+}

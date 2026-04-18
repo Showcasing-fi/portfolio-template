@@ -1,0 +1,53 @@
+name: Deploy to Plesk
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-plesk
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Validate manifest and resolve deployment config
+        id: manifest
+        run: node ./scripts/portfolio-manifest.mjs --github-output --require-real-username
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Deploy build output over FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ steps.manifest.outputs.remote_dir }}
+          local-dir: ./${{ steps.manifest.outputs.output_dir }}/
+
+      - name: Print deployment summary
+        run: |
+          echo "Validated username: ${{ steps.manifest.outputs.username }}"
+          echo "Deployed output directory: ${{ steps.manifest.outputs.output_dir }}"
+          echo "Configured public subpath: ${{ steps.manifest.outputs.deploy_path }}"
+          echo "Computed FTP target: ${{ steps.manifest.outputs.remote_dir }}"
