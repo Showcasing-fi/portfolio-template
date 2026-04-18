@@ -11,7 +11,7 @@ The actual contract for repositories created from this template is small:
 - independent frontend repository
 - static build output
 - deployable to a user-specific subpath such as `/niko/`
-- compatible with GitHub Actions -> FTP -> Plesk
+- compatible with GitHub Actions -> FTPS -> Plesk
 
 Everything else in this repo is just a practical default starter.
 
@@ -28,10 +28,11 @@ Everything else in this repo is just a practical default starter.
 ## Create the first real repo
 
 1. Create a new repository from this template, for example `portfolio-niko`.
-2. Update `portfolio.manifest.json`, especially `username` and `deployPath`.
+2. Update `portfolio.manifest.json`: set `username`, `deployPath`, and `siteTitle`.
 3. Replace the placeholder content in `src/data/siteContent.js`.
 4. Adjust styles and components as needed.
 5. Add the required GitHub secrets so the deployment workflow can publish the build output.
+6. Trigger deployment manually from the GitHub Actions tab when a maintainer is ready to publish.
 
 ## `portfolio.manifest.json`
 
@@ -55,12 +56,14 @@ What each field means:
 
 Deployment safety rules:
 
-- `username` is the source of truth for the FTP target directory
+- `username` is the source of truth for the deploy target
 - `deployPath` must exactly match `/${username}/`
-- the workflow computes the FTP server directory as `/httpdocs/${username}/`
-- placeholder values are allowed in the template, but deployment intentionally fails until they are replaced
+- the FTP user is assumed to be jailed directly into `httpdocs`
+- the workflow computes the FTP-visible server directory as `/${username}/`
+- `/` is always forbidden for portfolio repos
+- placeholder values are allowed in the template, but deployment intentionally fails until the default deployment placeholders are replaced
 
-Update this file before the first real deployment. The Vite build uses `deployPath` for the production base path, and the GitHub Actions workflow reads `username`, `deployPath`, and `outputDir` from the same manifest when deploying.
+Update this file before the first real deployment. The Vite build uses `deployPath` for the production base path, and the GitHub Actions workflow reads `username`, `deployPath`, and `outputDir` from the same manifest when deploying. `siteTitle` should also be updated so the generated portfolio does not keep the template title.
 
 ## Local development
 
@@ -104,9 +107,14 @@ How it is handled:
 The intended alignment is:
 
 - frontend deploy path: `/${username}/`
-- FTP target path: `/httpdocs/${username}/`
+- FTP-visible target path: `/${username}/`
 
-If the site is deployed to `/httpdocs/niko/`, then `deployPath` must be `/niko/`.
+Because the FTP account is rooted directly to `httpdocs`, portfolio repos must not prepend `/httpdocs` in the workflow target. For example:
+
+- `username: "niko"` -> public subpath `/niko/`
+- computed FTP-visible target -> `/niko/`
+
+From that jailed FTP session, deploying to `/niko/` lands in `httpdocs/niko/` on the server.
 
 ## GitHub Actions deployment
 
@@ -114,9 +122,10 @@ Workflow file:
 
 - `.github/workflows/deploy-plesk.yml`
 
+Deployment is manual by default for repositories created from this template. Pushes do not publish automatically. A maintainer must open the GitHub Actions tab and start the deploy workflow intentionally.
+
 Triggers:
 
-- push to `main`
 - `workflow_dispatch`
 
 Expected repository secrets:
@@ -127,25 +136,28 @@ Expected repository secrets:
 
 Portfolio repos do not use `FTP_REMOTE_DIR`.
 
-Instead, the workflow computes the FTP target automatically from `portfolio.manifest.json`:
+Instead, the workflow computes the FTP target automatically from `portfolio.manifest.json`, assuming the FTP user already starts inside `httpdocs`:
 
-- `username: "niko"` -> `/httpdocs/niko/`
+- `username: "niko"` -> `/niko/`
 
 The workflow intentionally fails before deployment if:
 
 - `username` is missing
 - `username` is still `your-username`
 - `username` does not match `^(?=.{3,30}$)[a-z0-9]+(?:-[a-z0-9]+)*$`
-- the computed FTP target would be malformed
 - `deployPath` does not exactly match `/${username}/`
+- the computed FTP target would be malformed
+- the computed FTP target resolves to `/`
 
 The workflow:
 
 - validates the manifest
 - installs dependencies with npm
 - builds the static site
-- computes the remote FTP directory from `username`
-- deploys only the built output folder over FTP
+- computes the jailed FTP-visible directory from `username`
+- deploys only the built output folder over FTPS
+
+This manual-only behavior is intentional. It keeps portfolio publishing moderated so maintainers can decide when a repository is ready to go live.
 
 No credentials are hardcoded in the repository.
 
@@ -163,7 +175,7 @@ Actual long-term requirements:
 - keep the repository independent
 - keep the output static
 - keep deployment compatible with a user-specific subpath
-- keep deployment compatible with GitHub Actions -> FTP -> Plesk
+- keep deployment compatible with GitHub Actions -> FTPS -> Plesk
 
 ## Default project structure
 

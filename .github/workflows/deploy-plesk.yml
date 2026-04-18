@@ -1,9 +1,6 @@
 name: Deploy to Plesk
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:
@@ -36,12 +33,13 @@ jobs:
       - name: Build static site
         run: npm run build
 
-      - name: Deploy build output over FTP
+      - name: Deploy build output over FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
           server-dir: ${{ steps.manifest.outputs.remote_dir }}
           local-dir: ./${{ steps.manifest.outputs.output_dir }}/
 
@@ -50,4 +48,4 @@ jobs:
           echo "Validated username: ${{ steps.manifest.outputs.username }}"
           echo "Deployed output directory: ${{ steps.manifest.outputs.output_dir }}"
           echo "Configured public subpath: ${{ steps.manifest.outputs.deploy_path }}"
-          echo "Computed FTP target: ${{ steps.manifest.outputs.remote_dir }}"
+          echo "Computed jailed FTP target: ${{ steps.manifest.outputs.remote_dir }}"
