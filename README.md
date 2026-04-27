@@ -31,7 +31,7 @@ Everything else in this repo is just a practical default starter.
 2. Update `portfolio.manifest.json`: set `username`, `deployPath`, and `siteTitle`.
 3. Replace the placeholder content in `src/data/siteContent.js`.
 4. Adjust styles and components as needed.
-5. Add the required GitHub secrets so the deployment workflow can publish the build output.
+5. Ensure the required FTP secrets are available through organization or repository configuration.
 6. Trigger deployment manually from the GitHub Actions tab when a maintainer is ready to publish.
 
 ## `portfolio.manifest.json`
@@ -128,15 +128,18 @@ Triggers:
 
 - `workflow_dispatch`
 
-Expected repository secrets:
+The real upload runs in the `deploy` job, which uses the GitHub Actions `production` environment. If that environment has required reviewers, GitHub pauses after manifest validation and build, then waits for approval before the FTPS deployment proceeds.
+
+Expected organization or repository secrets:
 
 - `FTP_HOST`
 - `FTP_USERNAME`
 - `FTP_PASSWORD`
 
-Portfolio repos do not use `FTP_REMOTE_DIR`.
+These secrets are consumed only by the `deploy` job. The validation and build job does not reference FTP credentials.
 
-Instead, the workflow computes the FTP target automatically from `portfolio.manifest.json`, assuming the FTP user already starts inside `httpdocs`:
+
+The workflow computes the FTP target automatically from `portfolio.manifest.json`, assuming the FTP user already starts inside `httpdocs`:
 
 - `username: "niko"` -> `/niko/`
 
@@ -155,7 +158,8 @@ The workflow:
 - installs dependencies with npm
 - builds the static site
 - computes the jailed FTP-visible directory from `username`
-- deploys only the built output folder over FTPS
+- passes the built output to the approval-gated deploy job
+- deploys only the built output folder over FTPS after the `production` environment gate
 
 This manual-only behavior is intentional. It keeps portfolio publishing moderated so maintainers can decide when a repository is ready to go live.
 

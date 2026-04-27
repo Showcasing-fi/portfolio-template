@@ -8,10 +8,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  validate-and-build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      username: ${{ steps.manifest.outputs.username }}
+      deploy_path: ${{ steps.manifest.outputs.deploy_path }}
+      output_dir: ${{ steps.manifest.outputs.output_dir }}
+      remote_dir: ${{ steps.manifest.outputs.remote_dir }}
 
     steps:
       - name: Check out repository
@@ -33,6 +38,29 @@ jobs:
       - name: Build static site
         run: npm run build
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-build
+          path: ./${{ steps.manifest.outputs.output_dir }}/
+          if-no-files-found: error
+          include-hidden-files: true
+
+  deploy:
+    needs: validate-and-build
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-build
+          path: ./${{ needs.validate-and-build.outputs.output_dir }}
+
       - name: Deploy build output over FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -40,12 +68,12 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
-          server-dir: ${{ steps.manifest.outputs.remote_dir }}
-          local-dir: ./${{ steps.manifest.outputs.output_dir }}/
+          server-dir: ${{ needs.validate-and-build.outputs.remote_dir }}
+          local-dir: ./${{ needs.validate-and-build.outputs.output_dir }}/
 
       - name: Print deployment summary
         run: |
-          echo "Validated username: ${{ steps.manifest.outputs.username }}"
-          echo "Deployed output directory: ${{ steps.manifest.outputs.output_dir }}"
-          echo "Configured public subpath: ${{ steps.manifest.outputs.deploy_path }}"
-          echo "Computed jailed FTP target: ${{ steps.manifest.outputs.remote_dir }}"
+          echo "Validated username: ${{ needs.validate-and-build.outputs.username }}"
+          echo "Deployed output directory: ${{ needs.validate-and-build.outputs.output_dir }}"
+          echo "Configured public subpath: ${{ needs.validate-and-build.outputs.deploy_path }}"
+          echo "Computed jailed FTP target: ${{ needs.validate-and-build.outputs.remote_dir }}"
