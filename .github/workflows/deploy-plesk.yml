@@ -16,6 +16,8 @@ jobs:
       username: ${{ steps.manifest.outputs.username }}
       deploy_path: ${{ steps.manifest.outputs.deploy_path }}
       output_dir: ${{ steps.manifest.outputs.output_dir }}
+      install_command: ${{ steps.manifest.outputs.install_command }}
+      build_command: ${{ steps.manifest.outputs.build_command }}
       remote_dir: ${{ steps.manifest.outputs.remote_dir }}
 
     steps:
@@ -26,17 +28,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Validate manifest and resolve deployment config
         id: manifest
         run: node ./scripts/portfolio-manifest.mjs --github-output --require-real-username
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          ${{ steps.manifest.outputs.install_command }}
 
       - name: Build static site
-        run: npm run build
+        run: |
+          ${{ steps.manifest.outputs.build_command }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

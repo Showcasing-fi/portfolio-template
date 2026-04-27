@@ -53,6 +53,26 @@ function normalizeOutputDir(value) {
   return normalized.replace(/\/$/, '');
 }
 
+function normalizeCommand(value, fieldName) {
+  const trimmed = requireNonEmptyString(value, fieldName);
+
+  if (/[\u0000-\u001f\u007f]/.test(trimmed)) {
+    fail(`${fieldName} must be a single-line command without control characters.`);
+  }
+
+  if (/[;&|<>`]/.test(trimmed) || trimmed.includes('$(')) {
+    fail(
+      `${fieldName} must be a single command without shell chaining, redirection, or command substitution.`
+    );
+  }
+
+  if (!/[A-Za-z0-9]/.test(trimmed)) {
+    fail(`${fieldName} must include a command name.`);
+  }
+
+  return trimmed;
+}
+
 export function resolvePortfolioManifest(options = {}) {
   const { requireRealUsername = false } = options;
   const manifest = readManifestFile();
@@ -79,6 +99,8 @@ export function resolvePortfolioManifest(options = {}) {
 
   const siteTitle = requireNonEmptyString(manifest.siteTitle, 'siteTitle');
   const outputDir = normalizeOutputDir(manifest.outputDir);
+  const installCommand = normalizeCommand(manifest.installCommand, 'installCommand');
+  const buildCommand = normalizeCommand(manifest.buildCommand, 'buildCommand');
   const remoteDir = `/${username}/`;
 
   if (remoteDir === '/') {
@@ -98,6 +120,8 @@ export function resolvePortfolioManifest(options = {}) {
     deployPath,
     expectedDeployPath,
     outputDir,
+    installCommand,
+    buildCommand,
     remoteDir,
     siteTitle,
   };
@@ -108,6 +132,8 @@ function writeGitHubOutput(config) {
     `username=${config.username}`,
     `deploy_path=${config.deployPath}`,
     `output_dir=${config.outputDir}`,
+    `install_command=${config.installCommand}`,
+    `build_command=${config.buildCommand}`,
     `remote_dir=${config.remoteDir}`,
     `site_title=${config.siteTitle}`,
   ].join('\n');

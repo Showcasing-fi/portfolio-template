@@ -2,5 +2,7 @@
   "username": "your-username",
   "deployPath": "/your-username/",
   "siteTitle": "Your Portfolio",
-  "outputDir": "dist"
+  "outputDir": "dist",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build"
 }
